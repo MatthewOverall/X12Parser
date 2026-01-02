@@ -8,13 +8,15 @@ namespace X12Parser
     {
         public static List<X12> ParseText(string text, X12Factory factory, bool dataChecks = true, bool boundsChecks = false)
         {
+            //look for the ISA segment to get default separators.
+            var separators = factory.GetMessageSeparatorsOrDefault(text);
             //var segments = text.Replace("\r\n", "").Replace("\n", "").Split(new[] { '~' }, StringSplitOptions.RemoveEmptyEntries);
-            var segments = text.Split(new[] { '~' }, StringSplitOptions.RemoveEmptyEntries);
+            var segments = text.Split(new[] { separators.SegmentSeparator }, StringSplitOptions.RemoveEmptyEntries);
             var list = new List<X12>();
             var index = 0;
             foreach (var segment in segments)
             {
-                var obj = factory.GetX12Item(segment.Trim(), index++, dataChecks, boundsChecks);
+                var obj = factory.GetX12Item(segment.Trim(), index++, dataChecks, boundsChecks, separators);
                 list.Add(obj);
             }
             return list;
