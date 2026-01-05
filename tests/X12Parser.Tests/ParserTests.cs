@@ -19,11 +19,12 @@ namespace X12Parser.Tests
         private const string OnlyOptional = @"OPT*****HERE~";
         private const string MinTest = "MIN*123456789~";
         private const string MaxTest = "MAX*12345678901234567890~";
-        private const string IsaWithCrLf = @"ISA*00*          *00*          *ZZ*610442         *ZZ*0FB            *190326*2111*^*00
+        private const string IsaWithCrLf = @"ISA*00*          *00*          *ZZ*610442         *ZZ*0FB            *190326*2111*|*00
 001*
 000000002*0*P*>~";
         private const string BhtLine = @"BHT*0019*00*144*20250219*020022*CH~";
         private const string ClmLine = @"CLM*XXX201640759-9*965***23:B:1*Y*A*Y*Y~";
+        //private const string ClmLine = @"CLM|XXX201640759-9|965|||23:B:1|Y|A|Y|Y~";
         private const string DmgLine = @"DMG*D8*19771028*M~";
         
         private const string HiLineShort = @"HI*ABK:R55~";

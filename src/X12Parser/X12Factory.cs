@@ -11,7 +11,8 @@ namespace X12Parser
         private Dictionary<string, List<PropCache>> _properties;
 
         private readonly Type _type;
-        public X12Factory(Type t): this(t, Assembly.GetEntryAssembly())
+
+        public X12Factory(Type t) : this(t, Assembly.GetEntryAssembly())
         {
             //_type = t;
             //var externalAssembly = Assembly.GetEntryAssembly();
@@ -62,7 +63,10 @@ namespace X12Parser
 
         public X12 GetX12Item(string data, int index, bool dataChecks = true, bool boundsChecks = false)
         {
-            var segments = data.Split(new[] { '*', '|' }).ToList();
+            var separator = data.FirstOrDefault(c => !char.IsLetterOrDigit(c));
+            separator = char.IsWhiteSpace(separator) || separator == default(char) ? '*' : separator;
+            
+            var segments = data.Split(separator).ToList();
             var segment = segments.First();
             if (!_objects.ContainsKey(segment))
             {
@@ -74,6 +78,7 @@ namespace X12Parser
 #endif
                 return generic;
             }
+
             var type = _objects[segment];
             var obj = (X12)Activator.CreateInstance(type);
             obj.RecordType = segment;
@@ -113,6 +118,7 @@ namespace X12Parser
                 {
                     CheckValue(value, prop.Segment, prop.Property);
                 }
+
                 prop.Property.SetValue(obj, value);
             }
 
@@ -131,11 +137,13 @@ namespace X12Parser
             {
                 var custom = (Segment)prop.GetCustomAttribute(typeof(Segment));
                 if (custom == null) continue; // throw new Exception($"Property {prop.Name} missing Segment Attribute");
-                if (seenOrder.ContainsKey(custom.Order)) throw new ArgumentException($"Segment order {custom.Order} has already been used on property {seenOrder[custom.Order]}. Doubting that it is also for {prop.Name}, should this be {++previousOrder}?");
+                if (seenOrder.ContainsKey(custom.Order))
+                    throw new ArgumentException($"Segment order {custom.Order} has already been used on property {seenOrder[custom.Order]}. Doubting that it is also for {prop.Name}, should this be {++previousOrder}?");
                 if (seenOrder.Any())
                 {
                     maxKey = seenOrder.Max(x => x.Key);
                 }
+
                 if (maxKey < custom.Order - 1) throw new ArgumentException($"Segment order {custom.Order} on property {prop.Name} was used before segment order {custom.Order - 1}, That doesn't seem correct.");
                 seenOrder.Add(custom.Order, prop.Name);
                 previousOrder = custom.Order;
@@ -146,14 +154,17 @@ namespace X12Parser
                 };
                 list.Add(propCache);
             }
+
             _properties.Add(segment, list);
         }
 
         private void CheckValue(string value, Segment seg, PropertyInfo prop)
         {
             if (seg.Optional && string.IsNullOrEmpty(value)) return;
-            if (seg.MinLength.HasValue && seg.MaxLength.HasValue && seg.MaxLength < seg.MinLength) throw new ArgumentException($"Segment {prop.ReflectedType.Name}.{prop.Name} max length of {seg.MaxLength.Value} is less than min length of {seg.MinLength.Value}");
-            if (seg.MinLength.HasValue && seg.MaxLength.HasValue && seg.MinLength > seg.MaxLength) throw new ArgumentException($"Segment {prop.ReflectedType.Name}.{prop.Name} min length of {seg.MinLength.Value} is greater than min length of {seg.MaxLength.Value}");
+            if (seg.MinLength.HasValue && seg.MaxLength.HasValue && seg.MaxLength < seg.MinLength)
+                throw new ArgumentException($"Segment {prop.ReflectedType.Name}.{prop.Name} max length of {seg.MaxLength.Value} is less than min length of {seg.MinLength.Value}");
+            if (seg.MinLength.HasValue && seg.MaxLength.HasValue && seg.MinLength > seg.MaxLength)
+                throw new ArgumentException($"Segment {prop.ReflectedType.Name}.{prop.Name} min length of {seg.MinLength.Value} is greater than min length of {seg.MaxLength.Value}");
             if (seg.MinLength.HasValue && value.Length < seg.MinLength.Value) throw new ArgumentException($"Segment {prop.ReflectedType.Name}.{prop.Name} min length is defined as {seg.MinLength.Value} but length is {value.Length}");
             if (seg.MaxLength.HasValue && value.Length > seg.MaxLength.Value) throw new ArgumentException($"Segment {prop.ReflectedType.Name}.{prop.Name} max length is defined as {seg.MaxLength.Value} but length is {value.Length}");
         }
